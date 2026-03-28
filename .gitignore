@@ -1,0 +1,34 @@
+.DS_Store
+node_modules
+/build
+/.svelte-kit
+/package
+.env
+.env.*
+!.env.example
+.vercel
+.output
+# Dependencies
+node_modules
+# Vite persistent cache
+.vitepress/cache
+# Production build files
+dist
+# Output of vite-ssg build
+distSSG
+# Output of the client-side bundle
+dist-client
+# Output of the server-side bundle
+dist-server
+# Temporary files (e.g., for Cypress)
+temp
+# Optional: local environment variables file
+.env.local
+# Optional: environment variables files used in production
+.env.production.local
+# Optional: TypeScript cache file
+.tsbuildinfo
+# Optional: editor configs
+.idea
+.vscode
+
