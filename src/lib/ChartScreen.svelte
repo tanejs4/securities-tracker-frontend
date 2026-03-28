@@ -1,0 +1,201 @@
+<script lang="ts">
+  import { onMount, onDestroy } from "svelte";
+  import { fetchChartHistory, fetchSymbolName } from "./api.js";
+  import { chartLiveTickStore, initWebSocket } from "./websocketStore.js";
+  import {
+    createChart,
+    ColorType,
+    type IChartApi,
+    type ISeriesApi,
+    CandlestickSeries,
+  } from "lightweight-charts";
+
+  let { navigate, symbol = "BTC/USDT" } = $props();
+
+  let chartContainer: HTMLElement;
+  let chart: IChartApi;
+  let candlestickSeries: ISeriesApi<"Candlestick">;
+
+  let chartData = $state([]);
+  let symbolName = $state("Loading...");
+  let lastTickTime = $state(Date.now());
+  let isLive = $state(true);
+
+  let selectedTimeframe = $state("1H");
+  //   const timeframes = ["15m", "1H", "1D", "1M"];
+  const timeframes = ["1H", "1D", "1W", "1M"];
+
+  $effect(() => {
+    if ($chartLiveTickStore && candlestickSeries) {
+      lastTickTime = Date.now();
+      try {
+        candlestickSeries.update($chartLiveTickStore as any);
+      } catch (e) {
+        // Safe to ignore if time is older than the last candle
+      }
+    }
+  });
+
+  $effect(() => {
+    const interval = setInterval(() => {
+      isLive = Date.now() - lastTickTime < 60000;
+    }, 1000);
+    return () => clearInterval(interval);
+  });
+
+  async function loadData(timeframe: string) {
+    try {
+      const data = await fetchChartHistory(symbol, timeframe);
+      chartData = data as any;
+      if (candlestickSeries) {
+        candlestickSeries.setData(data as any);
+        chart.timeScale().fitContent();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function handleTimeframeChange(tf: string) {
+    selectedTimeframe = tf;
+    loadData(tf);
+  }
+
+  onMount(() => {
+    chart = createChart(chartContainer, {
+      layout: {
+        background: { type: ColorType.Solid, color: "transparent" },
+        textColor: "#8b949e",
+      },
+      grid: {
+        vertLines: { color: "rgba(43, 43, 67, 0.1)" },
+        horzLines: { color: "rgba(43, 43, 67, 0.1)" },
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      crosshair: {
+        mode: 1,
+      },
+      rightPriceScale: {
+        borderColor: "rgba(43, 43, 67, 0.5)",
+      },
+    });
+
+    candlestickSeries = chart.addSeries(CandlestickSeries, {
+      upColor: "#26a69a",
+      downColor: "#ef5350",
+      borderVisible: false,
+      wickUpColor: "#26a69a",
+      wickDownColor: "#ef5350",
+    });
+
+    const handleResize = () => {
+      if (chartContainer) {
+        chart.applyOptions({
+          width: chartContainer.clientWidth,
+          height: chartContainer.clientHeight,
+        });
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
+    loadData(selectedTimeframe);
+
+    fetchSymbolName(symbol)
+      .then((data: any) => {
+        symbolName = data.name;
+      })
+      .catch((err: any) => {
+        console.error(err);
+        symbolName = symbol;
+      });
+
+    const ws = initWebSocket(symbol);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      chart.remove();
+      if (ws) ws.close();
+    };
+  });
+</script>
+
+<div class="flex flex-col h-screen overflow-hidden" id="symbol-chart">
+  <div
+    class="h-12 flex items-center px-4 bg-surface-container-low border-b border-outline-variant/10 justify-between shrink-0"
+  >
+    <div class="flex items-center gap-6">
+      <button
+        onclick={() => navigate("/")}
+        class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors pr-6 border-r border-outline-variant/20"
+      >
+        <span class="material-symbols-outlined text-xl">arrow_back</span>
+        <span class="text-xs font-bold uppercase tracking-wider"
+          >Back to Portfolio</span
+        >
+      </button>
+      <div
+        class="flex items-center gap-2 pr-4 border-r border-outline-variant/20"
+      >
+        <span class="font-bold text-on-surface tracking-tight">{symbol}</span>
+        <span
+          class="text-xs font-bold px-1.5 py-0.5 rounded bg-primary-container/20 text-primary"
+          >PERP</span
+        >
+      </div>
+      <div class="flex items-center gap-3" id="chart-timeframe-option">
+        {#each timeframes as tf}
+          <button
+            onclick={() => handleTimeframeChange(tf)}
+            class="text-xs font-semibold px-2 py-1 rounded transition-colors {selectedTimeframe ===
+            tf
+              ? 'bg-surface-container-high text-on-surface'
+              : 'text-on-surface-variant hover:bg-surface-container-high'}"
+            >{tf}</button
+          >
+        {/each}
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <div id="live-data-indicator" class="flex items-center gap-2">
+        <span
+          class="material-symbols-outlined text-lg transition-colors {isLive
+            ? 'text-primary animate-pulse'
+            : 'text-black'}"
+          >circle
+        </span>
+        <span class="text-xs font-mono font-medium text-primary">LIVE</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="relative flex-1 bg-[#131722] overflow-hidden chart-grid-h">
+    <div
+      class="absolute top-8 right-12 select-none opacity-5 pointer-events-none z-0"
+    >
+      <span class="text-[12rem] font-black tracking-tighter text-on-surface"
+        >{symbol.split("-")[0].split("/")[0]}</span
+      >
+    </div>
+
+    <div
+      class="absolute top-4 left-6 z-10 flex flex-col gap-1 pointer-events-none"
+    >
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-sm font-bold text-on-surface" id="chart-symbol-name"
+          >{symbolName}</span
+        >
+      </div>
+    </div>
+
+    <div
+      id="chart-historic-candle-stick-bar"
+      bind:this={chartContainer}
+      class="absolute inset-0 mt-16 z-10"
+    ></div>
+  </main>
+</div>
