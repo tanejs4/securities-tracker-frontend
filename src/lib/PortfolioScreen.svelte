@@ -32,6 +32,50 @@
     return () => {
       if (ws) ws.close();
     };
+    let isDown = false;
+    let startY: any;
+    let scrollTop: any;
+
+    // We attach this to the window/document to catch all drags
+    const handleMouseDown = (e: any) => {
+      isDown = true;
+      startY = e.pageY;
+      scrollTop = window.scrollY || document.documentElement.scrollTop;
+    };
+
+    const handleMouseLeave = () => {
+      isDown = false;
+    };
+
+    const handleMouseUp = () => {
+      isDown = false;
+    };
+
+    const handleMouseMove = (e: any) => {
+      if (!isDown) return;
+
+      // Prevent the default "text selection" behavior while dragging
+      e.preventDefault();
+
+      const y = e.pageY;
+      const walk = (y - startY) * 1.5; // Multiply by 1.5 to make it feel responsive
+
+      window.scrollTo(0, scrollTop - walk);
+    };
+
+    // Add event listeners
+    window.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mouseleave", handleMouseLeave);
+    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("mousemove", handleMouseMove, { passive: false });
+
+    // Cleanup listeners when component unmounts
+    return () => {
+      window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mouseleave", handleMouseLeave);
+      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
   });
 
   let totalPL = $derived(
