@@ -170,7 +170,8 @@
       >
         <h3 class="font-bold text-lg">Active Positions</h3>
       </div>
-      <div class="overflow-x-auto">
+      <!-- <div class="overflow-x-auto"> -->
+       <div class="overflow-x-auto touch-pan-x touch-pan-y overscroll-y-auto"></div>
         <table class="w-full text-left border-collapse">
           <thead>
             <tr
