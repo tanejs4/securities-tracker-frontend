@@ -33,15 +33,20 @@
     let isDown = false;
     let startY: any;
     let scrollTop: any;
+    let lastY = 0;
+    let ticking = false; // Used to throttle frames
 
     // Helper to get Y coordinate from either a mouse or touch event
     const getPageY = (e: any) =>
       e.touches && e.touches.length > 0 ? e.touches[0].pageY : e.pageY;
 
+
     const handleDown = (e: any) => {
       isDown = true;
       startY = getPageY(e);
       scrollTop = window.scrollY || document.documentElement.scrollTop;
+      lastY = getPageY(e); // Record exact starting pixel
+
     };
 
     const handleUpOrLeave = () => {
@@ -53,8 +58,22 @@
       e.preventDefault(); // Stop text selection / native panning
 
       const y = getPageY(e);
-      const walk = (y - startY) * 1.5;
-      window.scrollTo(0, scrollTop - walk);
+      const currentY = getPageY(e);
+      const delta = lastY - currentY; // Calculate the tiny difference moved
+      
+      lastY = currentY; // Update immediately for the next tiny movement
+      
+      // Throttle the actual DOM scroll to match the screen's refresh rate
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          window.scrollBy(0, delta); // Scroll by just that tiny difference
+          ticking = false;
+        });
+        ticking = true;
+      }
+      
+      // const walk = (y - startY) * 1.5;
+      // window.scrollTo(0, scrollTop - walk);
     };
 
     // Attach Mouse Events (for Pi OS text-selection quirk)
