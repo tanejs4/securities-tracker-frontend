@@ -1,6 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { fetchPortfolioOverview, fetchPositions, fetchStartupPortfolio } from "./api.js";
+  import {
+    fetchPortfolioOverview,
+    fetchPositions,
+    fetchStartupPortfolio,
+  } from "./api.js";
   import {
     positionsStore,
     portfolioStore,
@@ -20,7 +24,7 @@
       .then((data: any) => positionsStore.set(data))
       .catch(console.error);
     fetchStartupPortfolio()
-      .then((value: number) => startupPortfolioValue = value)
+      .then((value: number) => (startupPortfolioValue = value))
       .catch(console.error);
 
     // Connect to WebSocket for live updates
@@ -32,42 +36,49 @@
 
   let totalPL = $derived(
     $positionsStore
-      ? $positionsStore.reduce((sum: number, pos: any) => sum + (pos.pl || 0), 0)
+      ? $positionsStore.reduce(
+          (sum: number, pos: any) => sum + (pos.pl || 0),
+          0,
+        )
       : 0,
   );
 
   let startupPortfolioPercent = $derived(
-    startupPortfolioValue > 0 ? ((totalPL - startupPortfolioValue) / startupPortfolioValue) * 100 : 0
+    startupPortfolioValue > 0
+      ? ((totalPL - startupPortfolioValue) / startupPortfolioValue) * 100
+      : 0,
   );
 
   let lastUpdateTime = $state<Date | null>(null);
-  let timeAgo = $state<string>('Never');
+  let timeAgo = $state<string>("Never");
 
   $effect(() => {
     if ($portfolioStore || $positionsStore) {
-        lastUpdateTime = new Date();
+      lastUpdateTime = new Date();
     }
   });
 
   $effect(() => {
     const interval = setInterval(() => {
-        if (!lastUpdateTime) {
-            timeAgo = 'Never';
-            return;
-        }
-        const diffInSeconds = Math.floor((new Date().getTime() - lastUpdateTime.getTime()) / 1000);
-        
-        if (diffInSeconds < 5) {
-            timeAgo = 'Just now';
-        } else if (diffInSeconds < 60) {
-            timeAgo = `${diffInSeconds} seconds ago`;
-        } else if (diffInSeconds < 3600) {
-            timeAgo = `${Math.floor(diffInSeconds / 60)} minutes ago`;
-        } else {
-            timeAgo = `${Math.floor(diffInSeconds / 3600)} hours ago`;
-        }
+      if (!lastUpdateTime) {
+        timeAgo = "Never";
+        return;
+      }
+      const diffInSeconds = Math.floor(
+        (new Date().getTime() - lastUpdateTime.getTime()) / 1000,
+      );
+
+      if (diffInSeconds < 5) {
+        timeAgo = "Just now";
+      } else if (diffInSeconds < 60) {
+        timeAgo = `${diffInSeconds} seconds ago`;
+      } else if (diffInSeconds < 3600) {
+        timeAgo = `${Math.floor(diffInSeconds / 60)} minutes ago`;
+      } else {
+        timeAgo = `${Math.floor(diffInSeconds / 3600)} hours ago`;
+      }
     }, 1000);
-    
+
     return () => clearInterval(interval);
   });
 </script>
@@ -94,13 +105,20 @@
               )}
             </span>
             <span
-              class="flex items-center gap-1 {startupPortfolioPercent >= 0 ? 'text-primary' : 'text-secondary'} font-bold text-lg"
+              class="flex items-center gap-1 {startupPortfolioPercent >= 0
+                ? 'text-primary'
+                : 'text-secondary'} font-bold text-lg"
             >
               <span
                 class="material-symbols-outlined text-sm"
-                id="total-portfolio-value-percentage-and-arrow">{startupPortfolioPercent >= 0 ? 'north_east' : 'south_east'}</span
+                id="total-portfolio-value-percentage-and-arrow"
+                >{startupPortfolioPercent >= 0
+                  ? "north_east"
+                  : "south_east"}</span
               >
-              {Math.abs(startupPortfolioPercent).toLocaleString(undefined, { maximumFractionDigits: 1 })}%
+              {Math.abs(startupPortfolioPercent).toLocaleString(undefined, {
+                maximumFractionDigits: 1,
+              })}%
             </span>
           </div>
         </div>
@@ -171,7 +189,8 @@
         <h3 class="font-bold text-lg">Active Positions</h3>
       </div>
       <!-- <div class="overflow-x-auto"> -->
-       <div class="overflow-x-auto touch-pan-x touch-pan-y overscroll-y-auto"></div>
+      <!-- <div class="overflow-x-auto touch-pan-x touch-pan-y overscroll-y-auto"> -->
+      <div>
         <table class="w-full text-left border-collapse">
           <thead>
             <tr
