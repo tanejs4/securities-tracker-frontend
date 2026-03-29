@@ -43,6 +43,22 @@
         bottomLineColor: 'rgba( 239, 83, 80, 1)',
         bottomFillColor1: 'rgba( 239, 83, 80, 0.05)',
         bottomFillColor2: 'rgba( 239, 83, 80, 0.28)',
+        autoscaleInfoProvider: (original: () => any) => {
+          const res = original();
+          if (res !== null && res.priceRange !== null) {
+            res.priceRange.minValue = Math.min(res.priceRange.minValue, bookPrice!);
+            res.priceRange.maxValue = Math.max(res.priceRange.maxValue, bookPrice!);
+          }
+          return res;
+        }
+      });
+      activeSeries.createPriceLine({
+        price: bookPrice,
+        color: 'rgba(255, 255, 255, 0.6)',
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: 'Book Price',
       });
       if (chartData.length > 0) {
         activeSeries.setData(chartData.map((d: any) => ({ time: d.time, value: d.close })) as any);
