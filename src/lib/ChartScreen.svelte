@@ -225,7 +225,7 @@
   <div
     class="h-12 flex items-center px-4 bg-surface-container-low border-b border-outline-variant/10 justify-between shrink-0"
   >
-    <div class="flex items-center gap-6">
+    <div class="flex items-center gap-3">
       <button
         onclick={() => navigate("/")}
         class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors pr-6 border-r border-outline-variant/20"
@@ -236,24 +236,22 @@
         >
       </button>
       <div
-        class="flex items-center gap-2 pr-4 border-r border-outline-variant/20"
+        class="flex items-center gap-1 pr-1 border-r border-outline-variant/20"
       >
-        <span class="font-bold text-on-surface tracking-tight">{symbol}</span>
-        <!-- <span
-          class="text-xs font-bold px-1.5 py-0.5 rounded bg-primary-container/20 text-primary"
-          >PERP</span
-        > -->
+        <span class="text-xs font-bold text-on-surface tracking-tight"
+          >{symbol}</span
+        >
       </div>
-      <div class="flex items-center gap-3" id="chart-timeframe-option">
+      <div class="flex items-center gap-1" id="chart-timeframe-option">
         <div
-          class="flex items-center gap-1 bg-surface-container-low rounded p-0.5 border border-outline-variant/10 mr-2"
+          class="flex items-center gap-0 bg-surface-container-low rounded p-0.5 border border-outline-variant/10 mr-2"
         >
           <button
             onclick={() => {
               if (bookPrice !== null) createSeries("baseline");
             }}
             disabled={bookPrice === null}
-            class="text-xs font-semibold px-2 py-1 rounded transition-colors {chartType ===
+            class="text-s font-semibold px-2 py-1 rounded transition-colors {chartType ===
             'baseline'
               ? 'bg-surface-container-high text-on-surface'
               : 'text-on-surface-variant hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed'}"
@@ -262,7 +260,7 @@
           </button>
           <button
             onclick={() => createSeries("candlestick")}
-            class="text-xs font-semibold px-2 py-1 rounded transition-colors {chartType ===
+            class="text-s font-semibold px-2 py-1 rounded transition-colors {chartType ===
             'candlestick'
               ? 'bg-surface-container-high text-on-surface'
               : 'text-on-surface-variant hover:bg-surface-container-high'}"
@@ -273,7 +271,7 @@
         {#each timeframes as tf}
           <button
             onclick={() => handleTimeframeChange(tf)}
-            class="text-xs font-semibold px-2 py-1 rounded transition-colors {selectedTimeframe ===
+            class="text-m font-semibold px-3 py-1 rounded transition-colors {selectedTimeframe ===
             tf
               ? 'bg-surface-container-high text-on-surface'
               : 'text-on-surface-variant hover:bg-surface-container-high'}"
