@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { fetchChartHistory, fetchSymbolName } from "./api.js";
+  import { fetchChartHistory, fetchSymbolName, fetchPositions } from "./api.js";
   import { chartLiveTickStore, initWebSocket } from "./websocketStore.js";
   import {
     createChart,
@@ -8,13 +8,14 @@
     type IChartApi,
     type ISeriesApi,
     CandlestickSeries,
+    BaselineSeries,
   } from "lightweight-charts";
 
   let { navigate, symbol = "BTC/USDT" } = $props();
 
   let chartContainer: HTMLElement;
   let chart: IChartApi;
-  let candlestickSeries: ISeriesApi<"Candlestick">;
+  let activeSeries: ISeriesApi<"Candlestick"> | ISeriesApi<"Baseline"> | undefined;
 
   let chartData = $state([]);
   let symbolName = $state("Loading...");
@@ -25,11 +26,53 @@
   //   const timeframes = ["15m", "1H", "1D", "1M"];
   const timeframes = ["1H", "1D", "1W", "1M"];
 
+  let bookPrice = $state<number | null>(null);
+  let chartType = $state<'baseline' | 'candlestick'>('candlestick');
+
+  function createSeries(type: 'baseline' | 'candlestick') {
+    if (activeSeries) {
+      chart.removeSeries(activeSeries);
+    }
+    
+    if (type === 'baseline' && bookPrice !== null) {
+      activeSeries = chart.addSeries(BaselineSeries, {
+        baseValue: { type: 'price', price: bookPrice },
+        topLineColor: 'rgba( 38, 166, 154, 1)',
+        topFillColor1: 'rgba( 38, 166, 154, 0.28)',
+        topFillColor2: 'rgba( 38, 166, 154, 0.05)',
+        bottomLineColor: 'rgba( 239, 83, 80, 1)',
+        bottomFillColor1: 'rgba( 239, 83, 80, 0.05)',
+        bottomFillColor2: 'rgba( 239, 83, 80, 0.28)',
+      });
+      if (chartData.length > 0) {
+        activeSeries.setData(chartData.map((d: any) => ({ time: d.time, value: d.close })) as any);
+      }
+    } else {
+      activeSeries = chart.addSeries(CandlestickSeries, {
+        upColor: "#26a69a",
+        downColor: "#ef5350",
+        borderVisible: false,
+        wickUpColor: "#26a69a",
+        wickDownColor: "#ef5350",
+      });
+      if (chartData.length > 0) {
+        activeSeries.setData(chartData as any);
+      }
+    }
+    
+    chartType = type;
+  }
+
   $effect(() => {
-    if ($chartLiveTickStore && candlestickSeries) {
+    if ($chartLiveTickStore && activeSeries) {
       lastTickTime = Date.now();
       try {
-        candlestickSeries.update($chartLiveTickStore as any);
+        if (chartType === 'baseline') {
+          const tick = $chartLiveTickStore as any;
+          activeSeries.update({ time: tick.time, value: tick.close } as any);
+        } else {
+          activeSeries.update($chartLiveTickStore as any);
+        }
       } catch (e) {
         // Safe to ignore if time is older than the last candle
       }
@@ -47,8 +90,12 @@
     try {
       const data = await fetchChartHistory(symbol, timeframe);
       chartData = data as any;
-      if (candlestickSeries) {
-        candlestickSeries.setData(data as any);
+      if (activeSeries) {
+        if (chartType === 'baseline') {
+          activeSeries.setData(data.map((d: any) => ({ time: d.time, value: d.close })) as any);
+        } else {
+          activeSeries.setData(data as any);
+        }
         chart.timeScale().fitContent();
       }
     } catch (e) {
@@ -83,12 +130,20 @@
       },
     });
 
-    candlestickSeries = chart.addSeries(CandlestickSeries, {
-      upColor: "#26a69a",
-      downColor: "#ef5350",
-      borderVisible: false,
-      wickUpColor: "#26a69a",
-      wickDownColor: "#ef5350",
+    fetchPositions().then((positions) => {
+      const pos = positions.find((p: any) => p.symbol === symbol);
+      if (pos && pos.bookPrice !== undefined) {
+        bookPrice = pos.bookPrice;
+        createSeries('baseline');
+      } else if (pos && (pos as any).book_price !== undefined) {
+        bookPrice = (pos as any).book_price;
+        createSeries('baseline');
+      } else {
+        createSeries('candlestick');
+      }
+    }).catch((err) => {
+      console.error("Failed to fetch positions:", err);
+      createSeries('candlestick');
     });
 
     const handleResize = () => {
@@ -148,6 +203,21 @@
         >
       </div>
       <div class="flex items-center gap-3" id="chart-timeframe-option">
+        <div class="flex items-center gap-1 bg-surface-container-low rounded p-0.5 border border-outline-variant/10 mr-2">
+          <button
+            onclick={() => { if (bookPrice !== null) createSeries('baseline'); }}
+            disabled={bookPrice === null}
+            class="text-xs font-semibold px-2 py-1 rounded transition-colors {chartType === 'baseline' ? 'bg-surface-container-high text-on-surface' : 'text-on-surface-variant hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed'}"
+          >
+            Baseline
+          </button>
+          <button
+            onclick={() => createSeries('candlestick')}
+            class="text-xs font-semibold px-2 py-1 rounded transition-colors {chartType === 'candlestick' ? 'bg-surface-container-high text-on-surface' : 'text-on-surface-variant hover:bg-surface-container-high'}"
+          >
+            Candles
+          </button>
+        </div>
         {#each timeframes as tf}
           <button
             onclick={() => handleTimeframeChange(tf)}
