@@ -15,7 +15,10 @@
 
   let chartContainer: HTMLElement;
   let chart: IChartApi;
-  let activeSeries: ISeriesApi<"Candlestick"> | ISeriesApi<"Baseline"> | undefined;
+  let activeSeries:
+    | ISeriesApi<"Candlestick">
+    | ISeriesApi<"Baseline">
+    | undefined;
 
   let chartData = $state([]);
   let symbolName = $state("Loading...");
@@ -27,41 +30,49 @@
   const timeframes = ["1H", "1D", "1W", "1M"];
 
   let bookPrice = $state<number | null>(null);
-  let chartType = $state<'baseline' | 'candlestick'>('candlestick');
+  let chartType = $state<"baseline" | "candlestick">("candlestick");
 
-  function createSeries(type: 'baseline' | 'candlestick') {
+  function createSeries(type: "baseline" | "candlestick") {
     if (activeSeries) {
       chart.removeSeries(activeSeries);
     }
-    
-    if (type === 'baseline' && bookPrice !== null) {
+
+    if (type === "baseline" && bookPrice !== null) {
       activeSeries = chart.addSeries(BaselineSeries, {
-        baseValue: { type: 'price', price: bookPrice },
-        topLineColor: 'rgba( 38, 166, 154, 1)',
-        topFillColor1: 'rgba( 38, 166, 154, 0.28)',
-        topFillColor2: 'rgba( 38, 166, 154, 0.05)',
-        bottomLineColor: 'rgba( 239, 83, 80, 1)',
-        bottomFillColor1: 'rgba( 239, 83, 80, 0.05)',
-        bottomFillColor2: 'rgba( 239, 83, 80, 0.28)',
+        baseValue: { type: "price", price: bookPrice },
+        topLineColor: "rgba( 38, 166, 154, 1)",
+        topFillColor1: "rgba( 38, 166, 154, 0.28)",
+        topFillColor2: "rgba( 38, 166, 154, 0.05)",
+        bottomLineColor: "rgba( 239, 83, 80, 1)",
+        bottomFillColor1: "rgba( 239, 83, 80, 0.05)",
+        bottomFillColor2: "rgba( 239, 83, 80, 0.28)",
         autoscaleInfoProvider: (original: () => any) => {
           const res = original();
           if (res !== null && res.priceRange !== null) {
-            res.priceRange.minValue = Math.min(res.priceRange.minValue, bookPrice!);
-            res.priceRange.maxValue = Math.max(res.priceRange.maxValue, bookPrice!);
+            res.priceRange.minValue = Math.min(
+              res.priceRange.minValue,
+              bookPrice!,
+            );
+            res.priceRange.maxValue = Math.max(
+              res.priceRange.maxValue,
+              bookPrice!,
+            );
           }
           return res;
-        }
+        },
       });
       activeSeries.createPriceLine({
         price: bookPrice,
-        color: 'rgba(255, 255, 255, 0.6)',
+        color: "rgba(255, 255, 255, 0.6)",
         lineWidth: 1,
         lineStyle: 2,
         axisLabelVisible: true,
-        title: 'Book Price',
+        title: "Book Price",
       });
       if (chartData.length > 0) {
-        activeSeries.setData(chartData.map((d: any) => ({ time: d.time, value: d.close })) as any);
+        activeSeries.setData(
+          chartData.map((d: any) => ({ time: d.time, value: d.close })) as any,
+        );
       }
     } else {
       activeSeries = chart.addSeries(CandlestickSeries, {
@@ -75,7 +86,7 @@
         activeSeries.setData(chartData as any);
       }
     }
-    
+
     chartType = type;
   }
 
@@ -83,7 +94,7 @@
     if ($chartLiveTickStore && activeSeries) {
       lastTickTime = Date.now();
       try {
-        if (chartType === 'baseline') {
+        if (chartType === "baseline") {
           const tick = $chartLiveTickStore as any;
           activeSeries.update({ time: tick.time, value: tick.close } as any);
         } else {
@@ -99,11 +110,11 @@
     const interval = setInterval(() => {
       isLive = Date.now() - lastTickTime < 60000;
     }, 1000);
-    
+
     const pollInterval = setInterval(() => {
       loadData(selectedTimeframe, true);
     }, 30000);
-    
+
     return () => {
       clearInterval(interval);
       clearInterval(pollInterval);
@@ -115,8 +126,10 @@
       const data = await fetchChartHistory(symbol, timeframe);
       chartData = data as any;
       if (activeSeries) {
-        if (chartType === 'baseline') {
-          activeSeries.setData(data.map((d: any) => ({ time: d.time, value: d.close })) as any);
+        if (chartType === "baseline") {
+          activeSeries.setData(
+            data.map((d: any) => ({ time: d.time, value: d.close })) as any,
+          );
         } else {
           activeSeries.setData(data as any);
         }
@@ -157,21 +170,23 @@
       },
     });
 
-    fetchPositions().then((positions) => {
-      const pos = positions.find((p: any) => p.symbol === symbol);
-      if (pos && pos.bookPrice !== undefined) {
-        bookPrice = pos.bookPrice;
-        createSeries('baseline');
-      } else if (pos && (pos as any).book_price !== undefined) {
-        bookPrice = (pos as any).book_price;
-        createSeries('baseline');
-      } else {
-        createSeries('candlestick');
-      }
-    }).catch((err) => {
-      console.error("Failed to fetch positions:", err);
-      createSeries('candlestick');
-    });
+    fetchPositions()
+      .then((positions) => {
+        const pos = positions.find((p: any) => p.symbol === symbol);
+        if (pos && pos.bookPrice !== undefined) {
+          bookPrice = pos.bookPrice;
+          createSeries("baseline");
+        } else if (pos && (pos as any).book_price !== undefined) {
+          bookPrice = (pos as any).book_price;
+          createSeries("baseline");
+        } else {
+          createSeries("candlestick");
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch positions:", err);
+        createSeries("candlestick");
+      });
 
     const handleResize = () => {
       if (chartContainer) {
@@ -224,23 +239,33 @@
         class="flex items-center gap-2 pr-4 border-r border-outline-variant/20"
       >
         <span class="font-bold text-on-surface tracking-tight">{symbol}</span>
-        <span
+        <!-- <span
           class="text-xs font-bold px-1.5 py-0.5 rounded bg-primary-container/20 text-primary"
           >PERP</span
-        >
+        > -->
       </div>
       <div class="flex items-center gap-3" id="chart-timeframe-option">
-        <div class="flex items-center gap-1 bg-surface-container-low rounded p-0.5 border border-outline-variant/10 mr-2">
+        <div
+          class="flex items-center gap-1 bg-surface-container-low rounded p-0.5 border border-outline-variant/10 mr-2"
+        >
           <button
-            onclick={() => { if (bookPrice !== null) createSeries('baseline'); }}
+            onclick={() => {
+              if (bookPrice !== null) createSeries("baseline");
+            }}
             disabled={bookPrice === null}
-            class="text-xs font-semibold px-2 py-1 rounded transition-colors {chartType === 'baseline' ? 'bg-surface-container-high text-on-surface' : 'text-on-surface-variant hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed'}"
+            class="text-xs font-semibold px-2 py-1 rounded transition-colors {chartType ===
+            'baseline'
+              ? 'bg-surface-container-high text-on-surface'
+              : 'text-on-surface-variant hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed'}"
           >
             Baseline
           </button>
           <button
-            onclick={() => createSeries('candlestick')}
-            class="text-xs font-semibold px-2 py-1 rounded transition-colors {chartType === 'candlestick' ? 'bg-surface-container-high text-on-surface' : 'text-on-surface-variant hover:bg-surface-container-high'}"
+            onclick={() => createSeries("candlestick")}
+            class="text-xs font-semibold px-2 py-1 rounded transition-colors {chartType ===
+            'candlestick'
+              ? 'bg-surface-container-high text-on-surface'
+              : 'text-on-surface-variant hover:bg-surface-container-high'}"
           >
             Candles
           </button>

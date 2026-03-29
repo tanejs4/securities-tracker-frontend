@@ -16,7 +16,7 @@ export interface Position {
     bookPrice: number;
     shares: number;
     pl: number;
-    performance: number;
+    // performance: number;
 }
 
 export interface ChartDataPoint {

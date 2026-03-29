@@ -40,13 +40,11 @@
     const getPageY = (e: any) =>
       e.touches && e.touches.length > 0 ? e.touches[0].pageY : e.pageY;
 
-
     const handleDown = (e: any) => {
       isDown = true;
       startY = getPageY(e);
       scrollTop = window.scrollY || document.documentElement.scrollTop;
       lastY = getPageY(e); // Record exact starting pixel
-
     };
 
     const handleUpOrLeave = () => {
@@ -60,9 +58,9 @@
       const y = getPageY(e);
       const currentY = getPageY(e);
       const delta = lastY - currentY; // Calculate the tiny difference moved
-      
+
       lastY = currentY; // Update immediately for the next tiny movement
-      
+
       // Throttle the actual DOM scroll to match the screen's refresh rate
       if (!ticking) {
         window.requestAnimationFrame(() => {
@@ -71,7 +69,7 @@
         });
         ticking = true;
       }
-      
+
       // const walk = (y - startY) * 1.5;
       // window.scrollTo(0, scrollTop - walk);
     };
@@ -226,20 +224,20 @@
           Last updated: {timeAgo}
         </p>
         <div class="mt-4 flex items-center gap-2">
-          <div
+          <!-- <div
             class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden"
-          >
-            <div
+          > -->
+          <!-- <div
               class="h-full {($portfolioStore?.dailyChange ?? 0) >= 0
                 ? 'bg-primary'
                 : 'bg-secondary'} rounded-full"
               style="width: {$portfolioStore?.goalPercentage || 65}%;"
-            ></div>
-          </div>
-          <span
+            ></div> -->
+          <!-- </div> -->
+          <!-- <span
             class="text-[10px] text-on-surface-variant font-bold whitespace-nowrap"
             >Goal {$portfolioStore?.goalPercentage || 65}%</span
-          >
+          > -->
         </div>
       </div>
     </section>
@@ -265,7 +263,7 @@
               <th class="px-6 py-4 font-semibold text-right">Book Price</th>
               <th class="px-6 py-4 font-semibold text-right">Shares</th>
               <th class="px-6 py-4 font-semibold text-right">P/L (Total)</th>
-              <th class="px-6 py-4 font-semibold text-right">Performance</th>
+              <!-- <th class="px-6 py-4 font-semibold text-right">Performance</th> -->
             </tr>
           </thead>
           <tbody class="divide-y divide-outline-variant/5">
@@ -298,7 +296,7 @@
                     ? 'text-primary'
                     : 'text-secondary'}">{pos.pl}</td
                 >
-                <td class="px-6 py-5 text-right">
+                <!-- <td class="px-6 py-5 text-right">
                   <span
                     class="px-2 py-1 rounded-sm text-[10px] font-black {pos.performance >=
                     0
@@ -306,7 +304,7 @@
                       : 'bg-secondary/10 text-secondary'}"
                     >{pos.performance}%</span
                   >
-                </td>
+                </td> -->
               </tr>
             {:else}
               <tr>
