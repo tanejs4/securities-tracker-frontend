@@ -78,6 +78,54 @@
       window.removeEventListener("touchmove", handleMove);
     };
   });
+
+  let totalPL = $derived(
+    $positionsStore
+      ? $positionsStore.reduce(
+          (sum: number, pos: any) => sum + (pos.pl || 0),
+          0,
+        )
+      : 0,
+  );
+
+  let startupPortfolioPercent = $derived(
+    startupPortfolioValue > 0
+      ? ((totalPL - startupPortfolioValue) / startupPortfolioValue) * 100
+      : 0,
+  );
+
+  let lastUpdateTime = $state<Date | null>(null);
+  let timeAgo = $state<string>("Never");
+
+  $effect(() => {
+    if ($portfolioStore || $positionsStore) {
+      lastUpdateTime = new Date();
+    }
+  });
+
+  $effect(() => {
+    const interval = setInterval(() => {
+      if (!lastUpdateTime) {
+        timeAgo = "Never";
+        return;
+      }
+      const diffInSeconds = Math.floor(
+        (new Date().getTime() - lastUpdateTime.getTime()) / 1000,
+      );
+
+      if (diffInSeconds < 5) {
+        timeAgo = "Just now";
+      } else if (diffInSeconds < 60) {
+        timeAgo = `${diffInSeconds} seconds ago`;
+      } else if (diffInSeconds < 3600) {
+        timeAgo = `${Math.floor(diffInSeconds / 60)} minutes ago`;
+      } else {
+        timeAgo = `${Math.floor(diffInSeconds / 3600)} hours ago`;
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  });
 </script>
 
 <div class="flex min-h-screen justify-center">
