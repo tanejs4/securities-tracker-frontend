@@ -29,101 +29,54 @@
 
     // Connect to WebSocket for live updates
     const ws = initWebSocket();
-    return () => {
-      if (ws) ws.close();
-    };
+    // 3. Drag-to-Scroll Logic
     let isDown = false;
     let startY: any;
     let scrollTop: any;
 
-    // We attach this to the window/document to catch all drags
-    const handleMouseDown = (e: any) => {
+    // Helper to get Y coordinate from either a mouse or touch event
+    const getPageY = (e: any) =>
+      e.touches && e.touches.length > 0 ? e.touches[0].pageY : e.pageY;
+
+    const handleDown = (e: any) => {
       isDown = true;
-      startY = e.pageY;
+      startY = getPageY(e);
       scrollTop = window.scrollY || document.documentElement.scrollTop;
     };
 
-    const handleMouseLeave = () => {
+    const handleUpOrLeave = () => {
       isDown = false;
     };
 
-    const handleMouseUp = () => {
-      isDown = false;
-    };
-
-    const handleMouseMove = (e: any) => {
+    const handleMove = (e: any) => {
       if (!isDown) return;
+      e.preventDefault(); // Stop text selection / native panning
 
-      // Prevent the default "text selection" behavior while dragging
-      e.preventDefault();
-
-      const y = e.pageY;
-      const walk = (y - startY) * 1.5; // Multiply by 1.5 to make it feel responsive
-
+      const y = getPageY(e);
+      const walk = (y - startY) * 1.5;
       window.scrollTo(0, scrollTop - walk);
     };
 
-    // Add event listeners
-    window.addEventListener("mousedown", handleMouseDown);
-    window.addEventListener("mouseleave", handleMouseLeave);
-    window.addEventListener("mouseup", handleMouseUp);
-    window.addEventListener("mousemove", handleMouseMove, { passive: false });
+    // Attach Mouse Events (for Pi OS text-selection quirk)
+    window.addEventListener("mousedown", handleDown);
+    window.addEventListener("mouseleave", handleUpOrLeave);
+    window.addEventListener("mouseup", handleUpOrLeave);
+    window.addEventListener("mousemove", handleMove, { passive: false });
 
-    // Cleanup listeners when component unmounts
+    // Attach Touch Events (for native touch pass-through)
+    window.addEventListener("touchstart", handleDown, { passive: false });
+    window.addEventListener("touchend", handleUpOrLeave);
+    window.addEventListener("touchmove", handleMove, { passive: false });
     return () => {
-      window.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mouseleave", handleMouseLeave);
-      window.removeEventListener("mouseup", handleMouseUp);
-      window.removeEventListener("mousemove", handleMouseMove);
+      if (ws) ws.close();
+      window.removeEventListener("mousedown", handleDown);
+      window.removeEventListener("mouseleave", handleUpOrLeave);
+      window.removeEventListener("mouseup", handleUpOrLeave);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("touchstart", handleDown);
+      window.removeEventListener("touchend", handleUpOrLeave);
+      window.removeEventListener("touchmove", handleMove);
     };
-  });
-
-  let totalPL = $derived(
-    $positionsStore
-      ? $positionsStore.reduce(
-          (sum: number, pos: any) => sum + (pos.pl || 0),
-          0,
-        )
-      : 0,
-  );
-
-  let startupPortfolioPercent = $derived(
-    startupPortfolioValue > 0
-      ? ((totalPL - startupPortfolioValue) / startupPortfolioValue) * 100
-      : 0,
-  );
-
-  let lastUpdateTime = $state<Date | null>(null);
-  let timeAgo = $state<string>("Never");
-
-  $effect(() => {
-    if ($portfolioStore || $positionsStore) {
-      lastUpdateTime = new Date();
-    }
-  });
-
-  $effect(() => {
-    const interval = setInterval(() => {
-      if (!lastUpdateTime) {
-        timeAgo = "Never";
-        return;
-      }
-      const diffInSeconds = Math.floor(
-        (new Date().getTime() - lastUpdateTime.getTime()) / 1000,
-      );
-
-      if (diffInSeconds < 5) {
-        timeAgo = "Just now";
-      } else if (diffInSeconds < 60) {
-        timeAgo = `${diffInSeconds} seconds ago`;
-      } else if (diffInSeconds < 3600) {
-        timeAgo = `${Math.floor(diffInSeconds / 60)} minutes ago`;
-      } else {
-        timeAgo = `${Math.floor(diffInSeconds / 3600)} hours ago`;
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
   });
 </script>
 
