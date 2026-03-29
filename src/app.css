@@ -4,9 +4,8 @@
 /* 1. Reset and Force Scrollability */
 html {
   /* REMOVE: height: 100% and overflow: hidden */
-  /* Allow the root document to scroll naturally */
   background-color: #0f131e;
-  touch-action: pan-y; /* Move touch-action to the root */
+  touch-action: pan-x pan-y; 
 }
 
 body {
@@ -16,11 +15,9 @@ body {
   margin: 0;
   padding: 0;
   
-  /* Use vh for dynamic viewport height instead of % */
   min-height: 100vh; 
   
-  /* REMOVE: overflow-y: auto !important; */
-  overflow-x: hidden; /* Keep this to prevent horizontal sway */
+  overflow-x: auto; 
   -webkit-overflow-scrolling: touch;
 }
 
@@ -30,7 +27,6 @@ body {
   user-select: none !important;
   -webkit-touch-callout: none !important;
   
-  /* FIX: "inheritance" is invalid CSS. Change to "inherit" */
   touch-action: inherit; 
 }
 /* 3. Re-enable for inputs */
@@ -49,7 +45,7 @@ input, textarea {
   min-height: 100%; /* Ensure the Svelte root isn't squashed */
   display: block;
 }
-Re-enable for specific inputs ONLY if you need them later
+/* Re-enable for specific inputs ONLY if you need them later */
 input, textarea {
   user-select: text !important;
   -webkit-user-select: text !important;
