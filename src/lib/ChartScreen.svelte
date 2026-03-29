@@ -99,10 +99,18 @@
     const interval = setInterval(() => {
       isLive = Date.now() - lastTickTime < 60000;
     }, 1000);
-    return () => clearInterval(interval);
+    
+    const pollInterval = setInterval(() => {
+      loadData(selectedTimeframe, true);
+    }, 30000);
+    
+    return () => {
+      clearInterval(interval);
+      clearInterval(pollInterval);
+    };
   });
 
-  async function loadData(timeframe: string) {
+  async function loadData(timeframe: string, isUpdate = false) {
     try {
       const data = await fetchChartHistory(symbol, timeframe);
       chartData = data as any;
@@ -112,7 +120,10 @@
         } else {
           activeSeries.setData(data as any);
         }
-        chart.timeScale().fitContent();
+        if (!isUpdate) {
+          chart.timeScale().fitContent();
+        }
+        lastTickTime = Date.now();
       }
     } catch (e) {
       console.error(e);
