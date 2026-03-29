@@ -19,6 +19,8 @@ body {
   
   overflow-x: auto; 
   -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
+  transform: translateZ(0);
 }
 
 /* 2. Selection Kill-Switch */
