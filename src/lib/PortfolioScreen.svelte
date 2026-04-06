@@ -96,14 +96,7 @@
     };
   });
 
-  let totalPL = $derived(
-    $positionsStore
-      ? $positionsStore.reduce(
-          (sum: number, pos: any) => sum + (pos.pl || 0),
-          0,
-        )
-      : 0,
-  );
+  let totalPL = $derived(startupPortfolioValue ? startupPortfolioValue : 0);
 
   let startupPortfolioPercent = $derived(
     startupPortfolioValue > 0
